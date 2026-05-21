@@ -1,0 +1,2107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>DABBA — Build India's Digital Future</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy-900: #0a1228;
+    --navy-800: #11203f;
+    --navy-700: #1a2c55;
+    --navy-panel: rgba(14, 24, 48, 0.92);
+    --cyan: #5fe5ff;
+    --cyan-bright: #aef3ff;
+    --cyan-deep: #1aa3d6;
+    --gold: #ffd23d;
+    --gold-deep: #d99410;
+    --warm-orange: #ff8a3d;
+    --coral: #ff6b6b;
+    --ink: #061021;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: 'Fredoka', sans-serif;
+    background: #0a1228;
+    color: white;
+    user-select: none;
+    touch-action: none;
+  }
+
+  #stage { position: fixed; inset: 0; }
+  #world { position: absolute; inset: 0; display: block; cursor: grab; }
+  #world.dragging { cursor: grabbing; }
+  #world.placing { cursor: crosshair; }
+
+  /* ====== TOP HUD ====== */
+  .top-hud {
+    position: fixed; top: 12px; left: 12px; right: 12px;
+    display: flex; gap: 10px; justify-content: space-between;
+    pointer-events: none; z-index: 10;
+  }
+  .top-left, .top-right { display: flex; gap: 10px; pointer-events: auto; }
+
+  .stat-pill {
+    background: linear-gradient(180deg, #1a2c55 0%, #0e1830 100%);
+    border: 2px solid #2a4079;
+    border-radius: 22px;
+    padding: 8px 16px 8px 10px;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.15),
+      0 4px 0 #050c1c,
+      0 6px 16px rgba(0,0,0,0.5);
+    min-width: 100px;
+    position: relative;
+  }
+  .stat-pill .icon {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    box-shadow: inset 0 -2px 4px rgba(0,0,0,0.3), inset 0 2px 3px rgba(255,255,255,0.25);
+  }
+  .stat-pill .icon.coin {
+    background: radial-gradient(circle at 30% 30%, #ffe27a, #d99410 80%);
+    color: #6b3e00;
+    font-weight: 800;
+    font-size: 16px;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+  }
+  .stat-pill .icon.data {
+    background: radial-gradient(circle at 30% 30%, #aef3ff, #1aa3d6 80%);
+    box-shadow: inset 0 -2px 4px rgba(0,0,0,0.3), inset 0 2px 3px rgba(255,255,255,0.4), 0 0 12px rgba(95,229,255,0.5);
+  }
+  .stat-pill .icon.pop {
+    background: radial-gradient(circle at 30% 30%, #ffb88a, #c44a2c 80%);
+  }
+  .stat-pill .val {
+    font-family: 'Baloo 2', sans-serif; font-weight: 800;
+    font-size: 18px;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.4);
+    line-height: 1;
+  }
+  .stat-pill .lbl {
+    font-size: 10px; opacity: 0.6; letter-spacing: 0.5px; text-transform: uppercase;
+  }
+
+  .logo-pill {
+    background: linear-gradient(180deg, #1a2c55, #0e1830);
+    border: 2px solid #2a4079;
+    border-radius: 22px;
+    padding: 6px 14px;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 4px 0 #050c1c;
+  }
+  .logo-pill .wifi {
+    width: 28px; height: 22px; position: relative;
+  }
+  .logo-pill .wifi span {
+    position: absolute; left: 0; bottom: 0;
+    border: 3px solid #ffd23d;
+    border-color: transparent #ffd23d #ffd23d transparent;
+    border-radius: 0 0 14px 0;
+  }
+  .logo-pill .wifi span.s1 { width: 8px; height: 8px; }
+  .logo-pill .wifi span.s2 { width: 16px; height: 14px; left: 0; bottom: 0; opacity: 0.8;}
+  .logo-pill .wifi span.s3 { width: 24px; height: 20px; opacity: 0.55;}
+  .logo-pill .wifi span.dot { width: 5px; height: 5px; background: #ffd23d; border: none; border-radius: 50%; bottom: 0; left: 0;}
+  .logo-pill .name {
+    font-family: 'Baloo 2', sans-serif; font-weight: 800;
+    font-size: 22px; letter-spacing: 1px;
+    background: linear-gradient(180deg, #fff, #d8e6ff);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: none;
+  }
+
+  /* ====== MISSION CARD ====== */
+  .mission {
+    position: fixed; top: 70px; left: 12px;
+    background: var(--navy-panel);
+    border: 2px solid #2a4079;
+    border-radius: 18px;
+    padding: 10px 14px 10px 12px;
+    display: flex; gap: 10px; align-items: center;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 0 #050c1c, 0 8px 20px rgba(0,0,0,0.5);
+    max-width: 280px;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+  }
+  .mission .star {
+    width: 38px; height: 38px;
+    background: radial-gradient(circle at 30% 30%, #ffe27a, #d99410 80%);
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 6px rgba(255,210,61,0.5));
+  }
+  .mission .txt .t1 { font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.8px;}
+  .mission .txt .t2 { font-family: 'Baloo 2'; font-weight: 700; font-size: 14px; line-height: 1.15;}
+  .mission .progress {
+    margin-top: 4px;
+    height: 8px; width: 180px;
+    background: #050c1c; border-radius: 4px;
+    overflow: hidden; position: relative;
+    border: 1px solid #1a2c55;
+  }
+  .mission .progress .fill {
+    height: 100%;
+    background: linear-gradient(90deg, #5fe5ff, #aef3ff);
+    box-shadow: 0 0 8px #5fe5ff;
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  /* ====== BOTTOM TOOLBAR ====== */
+  .toolbar {
+    position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+    background: var(--navy-panel);
+    border: 2px solid #2a4079;
+    border-radius: 22px;
+    padding: 10px 12px;
+    display: flex; gap: 8px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 0 #050c1c, 0 10px 30px rgba(0,0,0,0.6);
+    z-index: 10;
+    backdrop-filter: blur(8px);
+  }
+  .tool {
+    width: 70px; height: 80px;
+    background: linear-gradient(180deg, #243a6a, #15264a);
+    border: 2px solid #335090;
+    border-radius: 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+    padding: 6px 4px;
+    cursor: pointer;
+    position: relative;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 3px 0 #0a1228;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+  .tool:hover { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 4px 0 #0a1228; }
+  .tool:active { transform: translateY(2px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 1px 0 #0a1228; }
+  .tool.selected {
+    border-color: var(--cyan);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 3px 0 #0a1228, 0 0 16px rgba(95,229,255,0.6);
+  }
+  .tool.locked {
+    filter: grayscale(0.7) brightness(0.7);
+    cursor: not-allowed;
+  }
+  .tool .ico {
+    width: 44px; height: 40px;
+    display: grid; place-items: center;
+    margin-top: 2px;
+  }
+  .tool .nm {
+    font-size: 10px; font-weight: 600;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.5);
+    letter-spacing: 0.2px;
+  }
+  .tool .cost {
+    position: absolute; top: -8px; right: -6px;
+    background: linear-gradient(180deg, #ffe27a, #d99410);
+    color: #6b3e00;
+    border-radius: 12px;
+    padding: 2px 7px 2px 4px;
+    font-weight: 800;
+    font-size: 11px;
+    display: flex; align-items: center; gap: 2px;
+    border: 2px solid #6b3e00;
+    box-shadow: 0 2px 0 #6b3e00;
+    font-family: 'Baloo 2';
+  }
+  .tool .cost::before {
+    content: ''; width: 10px; height: 10px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #fff, #ffb800);
+    border: 1px solid #6b3e00;
+  }
+  .tool .lock {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    background: rgba(10, 18, 40, 0.5); border-radius: 14px;
+    font-size: 22px;
+  }
+
+  /* ====== SIDE BUTTONS ====== */
+  .side-btns {
+    position: fixed; right: 12px; top: 70px;
+    display: flex; flex-direction: column; gap: 8px;
+    z-index: 10;
+  }
+  .side-btn {
+    width: 50px; height: 50px;
+    background: linear-gradient(180deg, #243a6a, #15264a);
+    border: 2px solid #335090;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 3px 0 #0a1228;
+    font-size: 22px;
+    color: var(--cyan);
+    transition: transform 0.1s ease;
+  }
+  .side-btn:active { transform: translateY(2px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 1px 0 #0a1228; }
+
+  /* ====== TOAST ====== */
+  .toast {
+    position: fixed; left: 50%; bottom: 130px;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--navy-panel);
+    border: 2px solid var(--cyan);
+    border-radius: 18px;
+    padding: 10px 18px;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--cyan-bright);
+    box-shadow: 0 0 20px rgba(95,229,255,0.4), 0 4px 0 #050c1c;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 20;
+    backdrop-filter: blur(8px);
+    max-width: 80%; text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ====== INTRO / WIN ====== */
+  .modal {
+    position: fixed; inset: 0;
+    background: rgba(6, 12, 28, 0.85);
+    display: grid; place-items: center;
+    z-index: 100;
+    opacity: 1; transition: opacity 0.4s ease;
+    backdrop-filter: blur(4px);
+  }
+  .modal.hidden { opacity: 0; pointer-events: none; }
+  .modal .card {
+    background: linear-gradient(180deg, #1a2c55 0%, #0e1830 100%);
+    border: 2px solid #335090;
+    border-radius: 24px;
+    padding: 28px 30px 24px;
+    max-width: 380px; width: calc(100% - 32px);
+    text-align: center;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 8px 0 #050c1c, 0 20px 60px rgba(0,0,0,0.7);
+    position: relative;
+  }
+  .modal .card .logo {
+    font-family: 'Baloo 2'; font-weight: 800;
+    font-size: 46px; letter-spacing: 2px;
+    background: linear-gradient(180deg, #fff, #aef3ff);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    margin-bottom: 4px;
+  }
+  .modal .card .logo .w {
+    width: 38px; height: 30px; position: relative; display: inline-block;
+  }
+  .modal .card .logo .w span {
+    position: absolute; left: 0; bottom: 0;
+    border: 4px solid #ffd23d;
+    border-color: transparent #ffd23d #ffd23d transparent;
+    border-radius: 0 0 18px 0;
+  }
+  .modal .card .logo .w span.s1 { width: 10px; height: 10px; }
+  .modal .card .logo .w span.s2 { width: 22px; height: 19px; opacity: 0.8;}
+  .modal .card .logo .w span.s3 { width: 34px; height: 28px; opacity: 0.5;}
+  .modal .card .logo .w span.dot { width: 6px; height: 6px; background: #ffd23d; border: none; border-radius: 50%; bottom: 0; left: 0;}
+  .modal .card .tag {
+    font-size: 13px; color: #aef3ff; letter-spacing: 1px;
+    margin-bottom: 18px;
+    text-transform: uppercase; font-weight: 600;
+  }
+  .modal .card .desc {
+    font-size: 14px; line-height: 1.55; opacity: 0.85;
+    margin-bottom: 20px;
+  }
+  .modal .card .desc strong { color: var(--gold); }
+  .play-btn {
+    background: linear-gradient(180deg, #ffe27a 0%, #ffb800 60%, #d99410 100%);
+    color: #4a2800;
+    font-family: 'Baloo 2'; font-weight: 800;
+    font-size: 20px; letter-spacing: 1px;
+    border: none;
+    padding: 14px 38px;
+    border-radius: 18px;
+    cursor: pointer;
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.5), inset 0 -2px 0 rgba(0,0,0,0.15), 0 5px 0 #6b3e00, 0 10px 20px rgba(0,0,0,0.4);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+  }
+  .play-btn:active {
+    transform: translateY(3px);
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.5), inset 0 -2px 0 rgba(0,0,0,0.15), 0 2px 0 #6b3e00, 0 5px 10px rgba(0,0,0,0.4);
+  }
+
+  /* ====== FLOATING COIN ANIM ====== */
+  .float-coin {
+    position: fixed;
+    font-family: 'Baloo 2'; font-weight: 800;
+    color: #ffd23d;
+    text-shadow: 0 2px 0 #6b3e00, 0 0 8px rgba(255,210,61,0.6);
+    font-size: 16px;
+    pointer-events: none;
+    z-index: 50;
+    animation: floatUp 1.2s ease-out forwards;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(0) scale(0.6); opacity: 0; }
+    20% { opacity: 1; transform: translateY(-8px) scale(1.1); }
+    100% { transform: translateY(-50px) scale(0.9); opacity: 0; }
+  }
+
+  /* tooltip on selected tool */
+  .placement-hint {
+    position: fixed; bottom: 110px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10, 18, 40, 0.85);
+    color: var(--cyan-bright);
+    padding: 6px 14px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid var(--cyan);
+    box-shadow: 0 0 12px rgba(95,229,255,0.3);
+    display: none;
+    z-index: 9;
+  }
+  .placement-hint.show { display: block; }
+
+  @media (max-width: 500px) {
+    .mission { max-width: 220px; }
+    .mission .progress { width: 130px; }
+    .tool { width: 60px; height: 72px; }
+    .tool .nm { font-size: 9px; }
+    .tool .ico { width: 38px; height: 34px; }
+    .stat-pill { padding: 6px 12px 6px 8px; min-width: 80px;}
+    .stat-pill .val { font-size: 15px; }
+    .stat-pill .icon { width: 28px; height: 28px; }
+    .logo-pill .name { font-size: 18px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <canvas id="world"></canvas>
+
+  <!-- TOP HUD -->
+  <div class="top-hud">
+    <div class="top-left">
+      <div class="logo-pill">
+        <div class="wifi">
+          <span class="s3"></span><span class="s2"></span><span class="s1"></span><span class="dot"></span>
+        </div>
+        <div class="name">DABBA</div>
+      </div>
+    </div>
+    <div class="top-right">
+      <div class="stat-pill">
+        <div class="icon coin">₹</div>
+        <div>
+          <div class="lbl">Coins</div>
+          <div class="val" id="coinsVal">150</div>
+        </div>
+      </div>
+      <div class="stat-pill">
+        <div class="icon data">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M2 12c5-5 15-5 20 0M5 15c3.5-3.5 10.5-3.5 14 0M8 18c2-2 6-2 8 0" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+            <circle cx="12" cy="20.5" r="1.5" fill="#fff"/>
+          </svg>
+        </div>
+        <div>
+          <div class="lbl">Connected</div>
+          <div class="val"><span id="connectedVal">0</span><span style="opacity:0.4">/<span id="totalVal">12</span></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MISSION -->
+  <div class="mission">
+    <div class="star"></div>
+    <div class="txt">
+      <div class="t1">Mission</div>
+      <div class="t2" id="missionText">Place your first Dabba router</div>
+      <div class="progress"><div class="fill" id="missionFill"></div></div>
+    </div>
+  </div>
+
+  <!-- SIDE BUTTONS -->
+  <div class="side-btns">
+    <div class="side-btn" id="zoomIn" title="Zoom in">+</div>
+    <div class="side-btn" id="zoomOut" title="Zoom out">−</div>
+    <div class="side-btn" id="resetCam" title="Center">⌂</div>
+  </div>
+
+  <!-- BOTTOM TOOLBAR -->
+  <div class="toolbar" id="toolbar"></div>
+
+  <div class="placement-hint" id="placementHint">Tap on the map to place • Tap again to cancel</div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- INTRO MODAL -->
+  <div class="modal" id="introModal">
+    <div class="card">
+      <div class="logo">
+        <span class="w">
+          <span class="s3"></span><span class="s2"></span><span class="s1"></span><span class="dot"></span>
+        </span>
+        DABBA
+      </div>
+      <div class="tag">Build India's Digital Future</div>
+      <div class="desc">
+        Place <strong>Dabba routers</strong> across India to connect homes, chai stalls, creators and markets. Every connection powers possibilities — and earns you coins. Light up the whole country!
+      </div>
+      <button class="play-btn" id="playBtn">Start Connecting</button>
+    </div>
+  </div>
+
+  <!-- WIN MODAL -->
+  <div class="modal hidden" id="winModal">
+    <div class="card">
+      <div class="logo" style="font-size:32px">🎉 INDIA CONNECTED 🎉</div>
+      <div class="desc" style="margin-top:14px">
+        You connected every village and city in your region. The whole map is glowing with internet — chai stalls are taking digital payments, creators are going live, kids are learning online.
+        <br><br>
+        <strong>Connecting Communities. Powering Possibilities.</strong>
+      </div>
+      <button class="play-btn" id="continueBtn">Keep Building</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DABBA — Build India's Digital Future
+   Isometric tycoon game in Township/SimCity BuildIt style
+   ============================================================ */
+
+const canvas = document.getElementById('world');
+const ctx = canvas.getContext('2d');
+
+let DPR = Math.min(window.devicePixelRatio || 1, 2);
+let W = window.innerWidth, H = window.innerHeight;
+
+function resize() {
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = W * DPR; canvas.height = H * DPR;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* ============== ISO MATH ============== */
+const TILE_W = 64;   // tile width in pixels (base)
+const TILE_H = 32;   // tile height in pixels (base)
+
+let camera = {
+  x: 0, y: 0,      // world offset
+  zoom: 1.0,
+  targetZoom: 1.0,
+};
+
+// world coords to screen coords
+function iso(gx, gy, gz = 0) {
+  const sx = (gx - gy) * (TILE_W/2);
+  const sy = (gx + gy) * (TILE_H/2) - gz;
+  return { x: sx, y: sy };
+}
+function worldToScreen(wx, wy) {
+  return {
+    x: (wx + camera.x) * camera.zoom + W/2,
+    y: (wy + camera.y) * camera.zoom + H/2
+  };
+}
+function screenToWorld(sx, sy) {
+  return {
+    x: (sx - W/2) / camera.zoom - camera.x,
+    y: (sy - H/2) / camera.zoom - camera.y
+  };
+}
+function screenToGrid(sx, sy) {
+  const w = screenToWorld(sx, sy);
+  const gx = (w.x / (TILE_W/2) + w.y / (TILE_H/2)) / 2;
+  const gy = (w.y / (TILE_H/2) - w.x / (TILE_W/2)) / 2;
+  return { gx, gy };
+}
+
+/* ============== GAME STATE ============== */
+const state = {
+  coins: 150,
+  totalBuildings: 0,
+  connected: 0,
+  level: 1,
+  selectedTool: null,
+  buildings: [],
+  routers: [],
+  particles: [],
+  beams: [],   // ephemeral pulses
+  time: 0,
+  won: false,
+};
+
+/* ============== TOOLS ============== */
+const TOOLS = [
+  { id: 'router', name: 'Dabba', cost: 50, range: 4.2, kind: 'router', unlockLvl: 1 },
+  { id: 'house',  name: 'House', cost: 30, kind: 'building', btype: 'house', unlockLvl: 1, income: 1 },
+  { id: 'chai',   name: 'Chai Stall', cost: 60, kind: 'building', btype: 'chai', unlockLvl: 1, income: 2 },
+  { id: 'apt',    name: 'Apartment', cost: 120, kind: 'building', btype: 'apt', unlockLvl: 2, income: 4 },
+  { id: 'studio', name: 'Creator', cost: 180, kind: 'building', btype: 'studio', unlockLvl: 3, income: 6 },
+  { id: 'cafe',   name: 'Gaming Café', cost: 220, kind: 'building', btype: 'cafe', unlockLvl: 3, income: 7 },
+];
+
+/* ============== INITIAL WORLD ============== */
+function setupWorld() {
+  // create map tiles: irregular blob shape
+  state.map = [];
+  const MAP = 14;
+  for (let y = -MAP; y <= MAP; y++) {
+    for (let x = -MAP; x <= MAP; x++) {
+      // organic land shape with some noise
+      const cx = x + Math.sin(y * 0.4) * 1.2;
+      const cy = y + Math.cos(x * 0.35) * 1.2;
+      const r = Math.sqrt(cx*cx + cy*cy);
+      if (r < 11 + Math.sin(x*0.6 + y*0.4) * 1.2) {
+        // slight elevation variations
+        state.map.push({ x, y, type: 'grass', shade: ((x*7+y*13) % 5) });
+      }
+    }
+  }
+
+  // a small lake / pond
+  state.water = [];
+  for (let y = -3; y <= 0; y++) {
+    for (let x = 5; x <= 9; x++) {
+      const d = Math.hypot(x-7, y+1.5);
+      if (d < 2.5) state.water.push({x, y});
+    }
+  }
+
+  // paths (cyan glow roads between key zones)
+  state.paths = [];
+
+  // initial buildings — pre-placed unconnected villages
+  const seeds = [
+    { x: -6, y: -3, btype: 'house' },
+    { x: -5, y: -3, btype: 'house' },
+    { x: -6, y: -1, btype: 'chai' },
+    { x: -2, y: -5, btype: 'house' },
+    { x: -1, y: -4, btype: 'house' },
+    { x:  2, y: -5, btype: 'apt' },
+    { x:  4, y: -2, btype: 'house' },
+    { x:  6, y:  3, btype: 'chai' },
+    { x:  2, y:  4, btype: 'apt' },
+    { x: -3, y:  4, btype: 'house' },
+    { x: -5, y:  3, btype: 'cafe' },
+    { x:  0, y:  0, btype: 'studio' },
+  ];
+  seeds.forEach(s => {
+    state.buildings.push(makeBuilding(s.x, s.y, s.btype));
+  });
+  state.totalBuildings = state.buildings.length;
+
+  // decorative trees
+  state.decor = [];
+  state.map.forEach(t => {
+    // skip near buildings
+    if (state.buildings.some(b => Math.abs(b.x - t.x) < 1.4 && Math.abs(b.y - t.y) < 1.4)) return;
+    if (state.water.some(w => w.x === t.x && w.y === t.y)) return;
+    const r = Math.sin(t.x * 12.9898 + t.y * 78.233) * 43758.5453;
+    const h = (r - Math.floor(r));
+    if (h < 0.08) state.decor.push({x: t.x, y: t.y, type: 'tree', variant: Math.floor(h * 1000) % 3});
+    else if (h > 0.92) state.decor.push({x: t.x, y: t.y, type: 'rock'});
+    else if (h > 0.86 && h < 0.9) state.decor.push({x: t.x, y: t.y, type: 'bush'});
+  });
+
+  // decorative landmark (temple) at edge
+  state.buildings.push(makeBuilding(-8, 5, 'temple', true));
+  state.buildings.push(makeBuilding(8, -6, 'temple', true));
+}
+
+function makeBuilding(x, y, btype, decorative = false) {
+  return {
+    x, y, btype, decorative,
+    connected: false,
+    incomeRate: ({house:1, chai:2, apt:4, studio:6, cafe:7, temple:0})[btype] || 1,
+    incomeAccum: 0,
+    bobPhase: Math.random() * Math.PI * 2,
+    builtAt: state.time || 0,
+    glowPhase: Math.random() * Math.PI * 2,
+  };
+}
+
+/* ============== CONNECTIVITY ============== */
+function recomputeConnectivity() {
+  let n = 0;
+  state.buildings.forEach(b => {
+    if (b.decorative) return;
+    let conn = false;
+    for (const r of state.routers) {
+      const d = Math.hypot(r.x - b.x, r.y - b.y);
+      if (d <= r.range) { conn = true; break; }
+    }
+    if (conn !== b.connected) {
+      b.connected = conn;
+      if (conn) spawnConnectBurst(b);
+    }
+    if (b.connected) n++;
+  });
+  state.connected = n;
+  updateHUD();
+  // check win
+  if (n >= state.totalBuildings && !state.won) {
+    state.won = true;
+    setTimeout(() => document.getElementById('winModal').classList.remove('hidden'), 800);
+  }
+}
+
+function spawnConnectBurst(b) {
+  for (let i = 0; i < 14; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const s = 1 + Math.random() * 2;
+    state.particles.push({
+      x: b.x, y: b.y, z: 30 + Math.random()*20,
+      vx: Math.cos(a) * s * 0.06, vy: Math.sin(a) * s * 0.06,
+      vz: 1 + Math.random() * 2,
+      life: 60, max: 60,
+      color: '#5fe5ff', kind: 'spark',
+    });
+  }
+}
+
+/* ============== TOOLBAR ============== */
+function renderToolbar() {
+  const bar = document.getElementById('toolbar');
+  bar.innerHTML = '';
+  TOOLS.forEach(t => {
+    const locked = state.level < t.unlockLvl;
+    const el = document.createElement('div');
+    el.className = 'tool' + (locked ? ' locked' : '') + (state.selectedTool === t.id ? ' selected' : '');
+    el.dataset.id = t.id;
+    el.innerHTML = `
+      <div class="ico">${toolIcon(t)}</div>
+      <div class="nm">${t.name}</div>
+      <div class="cost">${t.cost}</div>
+      ${locked ? `<div class="lock">🔒</div>` : ''}
+    `;
+    if (!locked) {
+      el.addEventListener('click', () => {
+        if (state.selectedTool === t.id) { state.selectedTool = null; }
+        else { state.selectedTool = t.id; }
+        renderToolbar();
+        canvas.classList.toggle('placing', !!state.selectedTool);
+        document.getElementById('placementHint').classList.toggle('show', !!state.selectedTool);
+      });
+    } else {
+      el.addEventListener('click', () => showToast(`Unlocks at level ${t.unlockLvl}`));
+    }
+    bar.appendChild(el);
+  });
+}
+
+function toolIcon(t) {
+  if (t.kind === 'router') {
+    return `<svg width="42" height="38" viewBox="0 0 42 38">
+      <ellipse cx="21" cy="33" rx="14" ry="3" fill="rgba(0,0,0,0.4)"/>
+      <line x1="13" y1="20" x2="9" y2="6" stroke="#2a2a2a" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="29" y1="20" x2="33" y2="6" stroke="#2a2a2a" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="9" cy="5" r="2.5" fill="#1a1a1a"/>
+      <circle cx="33" cy="5" r="2.5" fill="#1a1a1a"/>
+      <rect x="6" y="18" width="30" height="14" rx="5" fill="#1a1a1a"/>
+      <rect x="6" y="18" width="30" height="14" rx="5" fill="url(#routGrad)" opacity="0.4"/>
+      <circle cx="13" cy="28" r="1.4" fill="#5fe5ff"/>
+      <circle cx="18" cy="28" r="1.4" fill="#5fe5ff"/>
+      <circle cx="23" cy="28" r="1.4" fill="#ffd23d"/>
+      <text x="21" y="26" font-family="Baloo 2" font-weight="800" font-size="6" fill="#ffd23d" text-anchor="middle">DABBA</text>
+      <defs><linearGradient id="routGrad" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.3"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient></defs>
+    </svg>`;
+  }
+  if (t.btype === 'house') return svgHouseIcon();
+  if (t.btype === 'chai') return svgChaiIcon();
+  if (t.btype === 'apt') return svgAptIcon();
+  if (t.btype === 'studio') return svgStudioIcon();
+  if (t.btype === 'cafe') return svgCafeIcon();
+  return '';
+}
+function svgHouseIcon() {
+  return `<svg width="42" height="38" viewBox="0 0 42 38">
+    <ellipse cx="21" cy="34" rx="15" ry="3" fill="rgba(0,0,0,0.35)"/>
+    <polygon points="21,4 6,16 36,16" fill="#c44a2c"/>
+    <polygon points="21,4 36,16 36,18 21,6" fill="#8a2e1a"/>
+    <rect x="9" y="16" width="24" height="16" fill="#ffd9a8"/>
+    <rect x="9" y="16" width="24" height="2" fill="#e0a87a"/>
+    <rect x="18" y="22" width="6" height="10" fill="#5a3220"/>
+    <rect x="12" y="20" width="4" height="4" fill="#5fe5ff" opacity="0.9"/>
+    <rect x="26" y="20" width="4" height="4" fill="#5fe5ff" opacity="0.9"/>
+  </svg>`;
+}
+function svgChaiIcon() {
+  return `<svg width="42" height="38" viewBox="0 0 42 38">
+    <ellipse cx="21" cy="34" rx="15" ry="3" fill="rgba(0,0,0,0.35)"/>
+    <polygon points="6,16 36,16 32,8 10,8" fill="#ff8a3d"/>
+    <rect x="8" y="16" width="26" height="14" fill="#8a5a30"/>
+    <rect x="8" y="16" width="26" height="3" fill="#5a3a20"/>
+    <rect x="13" y="20" width="16" height="8" fill="#3a2410"/>
+    <circle cx="17" cy="14" r="2" fill="#fff" opacity="0.6"/>
+    <path d="M21 12 Q22 9 21 6" stroke="#fff" stroke-width="1.5" fill="none" opacity="0.5"/>
+  </svg>`;
+}
+function svgAptIcon() {
+  return `<svg width="42" height="38" viewBox="0 0 42 38">
+    <ellipse cx="21" cy="34" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/>
+    <rect x="10" y="6" width="22" height="26" fill="#e8c994"/>
+    <rect x="10" y="6" width="22" height="3" fill="#3a4a6a"/>
+    <rect x="13" y="11" width="4" height="4" fill="#5fe5ff"/>
+    <rect x="19" y="11" width="4" height="4" fill="#5fe5ff" opacity="0.7"/>
+    <rect x="25" y="11" width="4" height="4" fill="#5fe5ff"/>
+    <rect x="13" y="18" width="4" height="4" fill="#5fe5ff" opacity="0.6"/>
+    <rect x="19" y="18" width="4" height="4" fill="#5fe5ff"/>
+    <rect x="25" y="18" width="4" height="4" fill="#5fe5ff" opacity="0.8"/>
+    <rect x="18" y="25" width="6" height="7" fill="#5a3220"/>
+  </svg>`;
+}
+function svgStudioIcon() {
+  return `<svg width="42" height="38" viewBox="0 0 42 38">
+    <ellipse cx="21" cy="34" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/>
+    <rect x="9" y="10" width="24" height="22" fill="#9b59ff"/>
+    <rect x="9" y="10" width="24" height="3" fill="#6a3aa8"/>
+    <circle cx="16" cy="20" r="4" fill="#fff" opacity="0.95"/>
+    <circle cx="16" cy="20" r="2" fill="#ffd23d"/>
+    <rect x="22" y="16" width="8" height="6" fill="#0a1228"/>
+    <rect x="23" y="17" width="6" height="4" fill="#5fe5ff"/>
+    <circle cx="26" cy="27" r="1.5" fill="#ff3a3a"/>
+    <text x="29" y="29" font-family="Baloo 2" font-size="5" fill="#fff" font-weight="800">LIVE</text>
+  </svg>`;
+}
+function svgCafeIcon() {
+  return `<svg width="42" height="38" viewBox="0 0 42 38">
+    <ellipse cx="21" cy="34" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/>
+    <rect x="8" y="8" width="26" height="24" fill="#1a2c55"/>
+    <rect x="8" y="8" width="26" height="3" fill="#0a1228"/>
+    <rect x="11" y="13" width="9" height="6" fill="#ff3a8a"/>
+    <rect x="22" y="13" width="9" height="6" fill="#5fe5ff"/>
+    <rect x="11" y="22" width="9" height="6" fill="#5fe5ff"/>
+    <rect x="22" y="22" width="9" height="6" fill="#ffd23d"/>
+  </svg>`;
+}
+
+/* ============== UI HELPERS ============== */
+function updateHUD() {
+  document.getElementById('coinsVal').textContent = Math.floor(state.coins);
+  document.getElementById('connectedVal').textContent = state.connected;
+  document.getElementById('totalVal').textContent = state.totalBuildings;
+
+  const pct = (state.connected / state.totalBuildings) * 100;
+  document.getElementById('missionFill').style.width = pct + '%';
+
+  let m = 'Place your first Dabba router';
+  if (state.routers.length > 0 && state.connected < state.totalBuildings) {
+    m = `Connect every building (${state.connected}/${state.totalBuildings})`;
+  }
+  if (state.connected >= state.totalBuildings) m = 'India is fully connected! 🎉';
+  document.getElementById('missionText').textContent = m;
+
+  // unlock levels
+  if (state.connected >= 3 && state.level < 2) { state.level = 2; showToast('Level 2! Apartments unlocked'); renderToolbar(); }
+  if (state.connected >= 6 && state.level < 3) { state.level = 3; showToast('Level 3! Creator Studio + Gaming Café unlocked'); renderToolbar(); }
+}
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+function spawnFloatCoin(sx, sy, amt) {
+  const d = document.createElement('div');
+  d.className = 'float-coin';
+  d.textContent = `+${amt}`;
+  d.style.left = (sx - 20) + 'px';
+  d.style.top = (sy - 10) + 'px';
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 1300);
+}
+
+/* ============== INPUT ============== */
+let drag = { active: false, sx: 0, sy: 0, startCamX: 0, startCamY: 0, moved: 0 };
+let pinch = { active: false, dist: 0, startZoom: 1 };
+
+canvas.addEventListener('mousedown', (e) => {
+  drag.active = true;
+  drag.sx = e.clientX; drag.sy = e.clientY;
+  drag.startCamX = camera.x; drag.startCamY = camera.y;
+  drag.moved = 0;
+  canvas.classList.add('dragging');
+});
+canvas.addEventListener('mousemove', (e) => {
+  if (drag.active) {
+    const dx = e.clientX - drag.sx;
+    const dy = e.clientY - drag.sy;
+    drag.moved += Math.abs(dx) + Math.abs(dy);
+    camera.x = drag.startCamX + dx / camera.zoom;
+    camera.y = drag.startCamY + dy / camera.zoom;
+  }
+  hoverPos = { x: e.clientX, y: e.clientY };
+});
+canvas.addEventListener('mouseup', (e) => {
+  canvas.classList.remove('dragging');
+  if (drag.active && drag.moved < 8) {
+    handleClick(e.clientX, e.clientY);
+  }
+  drag.active = false;
+});
+canvas.addEventListener('mouseleave', () => { drag.active = false; canvas.classList.remove('dragging'); });
+
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.1 : 0.9;
+  camera.targetZoom = Math.max(0.55, Math.min(1.8, camera.targetZoom * factor));
+}, { passive: false });
+
+// Touch
+canvas.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 1) {
+    drag.active = true;
+    drag.sx = e.touches[0].clientX; drag.sy = e.touches[0].clientY;
+    drag.startCamX = camera.x; drag.startCamY = camera.y;
+    drag.moved = 0;
+  } else if (e.touches.length === 2) {
+    pinch.active = true;
+    drag.active = false;
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    pinch.dist = Math.hypot(dx, dy);
+    pinch.startZoom = camera.zoom;
+  }
+}, { passive: false });
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  if (pinch.active && e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const d = Math.hypot(dx, dy);
+    camera.targetZoom = Math.max(0.55, Math.min(1.8, pinch.startZoom * (d / pinch.dist)));
+  } else if (drag.active && e.touches.length === 1) {
+    const dx = e.touches[0].clientX - drag.sx;
+    const dy = e.touches[0].clientY - drag.sy;
+    drag.moved += Math.abs(dx) + Math.abs(dy);
+    camera.x = drag.startCamX + dx / camera.zoom;
+    camera.y = drag.startCamY + dy / camera.zoom;
+    hoverPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }
+}, { passive: false });
+canvas.addEventListener('touchend', (e) => {
+  if (drag.active && drag.moved < 8 && e.changedTouches.length === 1) {
+    handleClick(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+  }
+  if (e.touches.length === 0) {
+    drag.active = false;
+    pinch.active = false;
+  }
+}, { passive: false });
+
+let hoverPos = { x: -1000, y: -1000 };
+
+function handleClick(sx, sy) {
+  if (!state.selectedTool) return;
+  const tool = TOOLS.find(t => t.id === state.selectedTool);
+  if (!tool) return;
+
+  const g = screenToGrid(sx, sy);
+  const gx = Math.round(g.gx);
+  const gy = Math.round(g.gy);
+
+  // valid tile?
+  const onLand = state.map.some(t => t.x === gx && t.y === gy);
+  const onWater = state.water.some(w => w.x === gx && w.y === gy);
+  if (!onLand || onWater) { showToast('Place on land'); return; }
+
+  // occupied?
+  const occupied = state.buildings.some(b => b.x === gx && b.y === gy) ||
+                   state.routers.some(r => r.x === gx && r.y === gy);
+  if (occupied) { showToast('Tile occupied'); return; }
+
+  if (state.coins < tool.cost) { showToast('Not enough coins'); return; }
+  state.coins -= tool.cost;
+
+  if (tool.kind === 'router') {
+    state.routers.push({
+      x: gx, y: gy, range: tool.range,
+      pulse: 0, built: state.time, justPlaced: 60,
+    });
+    showToast('Router placed!');
+  } else {
+    const nb = makeBuilding(gx, gy, tool.btype);
+    nb.justPlaced = 60;
+    state.buildings.push(nb);
+    state.totalBuildings = state.buildings.filter(b => !b.decorative).length;
+    showToast(`${tool.name} built!`);
+  }
+
+  recomputeConnectivity();
+  spawnFloatCoin(sx, sy, -tool.cost);
+  state.selectedTool = null;
+  canvas.classList.remove('placing');
+  document.getElementById('placementHint').classList.remove('show');
+  renderToolbar();
+  updateHUD();
+}
+
+document.getElementById('zoomIn').onclick = () => camera.targetZoom = Math.min(1.8, camera.targetZoom * 1.2);
+document.getElementById('zoomOut').onclick = () => camera.targetZoom = Math.max(0.55, camera.targetZoom * 0.83);
+document.getElementById('resetCam').onclick = () => { camera.x = 0; camera.y = 0; camera.targetZoom = 1.0; };
+
+document.getElementById('playBtn').onclick = () => {
+  document.getElementById('introModal').classList.add('hidden');
+};
+document.getElementById('continueBtn').onclick = () => {
+  document.getElementById('winModal').classList.add('hidden');
+};
+
+/* ============== DRAWING HELPERS ============== */
+function drawIsoTile(cx, cy, w, h, fill, stroke) {
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - h);
+  ctx.lineTo(cx + w, cy);
+  ctx.lineTo(cx, cy + h);
+  ctx.lineTo(cx - w, cy);
+  ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 0.5; ctx.stroke(); }
+}
+
+// Chunky cuboid in isometric. width/depth in tile-units, height in pixels
+function drawIsoBox(cx, cy, tw, td, height, colors) {
+  const hx = tw * TILE_W/2;
+  const hy = tw * TILE_H/2;
+  const dx = td * TILE_W/2;
+  const dy = td * TILE_H/2;
+
+  // Top vertices (z = -height)
+  const top = {
+    n: { x: cx, y: cy - hy - dy - height },
+    e: { x: cx + hx, y: cy - hy + dy - height }, // forward-right is +x grid
+    s: { x: cx + hx - dx, y: cy - hy + dy + hy - height }, // not used as such
+    // actually simpler: define 4 top corners using grid corners
+  };
+  // grid corners of footprint: (0,0), (tw,0), (tw,td), (0,td) translated to center
+  // place center at cx, cy = ground center
+  // half extents:
+  const c1 = { x: cx + (-tw/2 + -td/2) * TILE_W/2 + (-tw/2 - -td/2) * 0, y: 0 }; // we'll just compute by hand:
+  // Use iso() with relative grid offsets
+  function p(rx, ry, z=0) {
+    return { x: cx + (rx - ry) * TILE_W/2, y: cy + (rx + ry) * TILE_H/2 - z };
+  }
+  const half = tw/2, halfD = td/2;
+  const bA = p(-half, -halfD);   // back
+  const bB = p( half, -halfD);   // right
+  const bC = p( half,  halfD);   // front
+  const bD = p(-half,  halfD);   // left
+  const tA = p(-half, -halfD, height);
+  const tB = p( half, -halfD, height);
+  const tC = p( half,  halfD, height);
+  const tD = p(-half,  halfD, height);
+
+  // Right face (visible)
+  ctx.beginPath();
+  ctx.moveTo(bB.x, bB.y); ctx.lineTo(bC.x, bC.y);
+  ctx.lineTo(tC.x, tC.y); ctx.lineTo(tB.x, tB.y); ctx.closePath();
+  ctx.fillStyle = colors.right; ctx.fill();
+  // inner shadow at top
+  ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1; ctx.stroke();
+
+  // Left face
+  ctx.beginPath();
+  ctx.moveTo(bD.x, bD.y); ctx.lineTo(bC.x, bC.y);
+  ctx.lineTo(tC.x, tC.y); ctx.lineTo(tD.x, tD.y); ctx.closePath();
+  ctx.fillStyle = colors.left; ctx.fill();
+  ctx.stroke();
+
+  // Top face
+  ctx.beginPath();
+  ctx.moveTo(tA.x, tA.y); ctx.lineTo(tB.x, tB.y);
+  ctx.lineTo(tC.x, tC.y); ctx.lineTo(tD.x, tD.y); ctx.closePath();
+  ctx.fillStyle = colors.top; ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1; ctx.stroke();
+
+  return { tA, tB, tC, tD, bA, bB, bC, bD };
+}
+
+function lighten(hex, amt) {
+  const c = parseInt(hex.slice(1), 16);
+  let r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255;
+  r = Math.min(255, r + amt); g = Math.min(255, g + amt); b = Math.min(255, b + amt);
+  return '#' + ((r<<16)|(g<<8)|b).toString(16).padStart(6, '0');
+}
+function darken(hex, amt) {
+  const c = parseInt(hex.slice(1), 16);
+  let r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255;
+  r = Math.max(0, r - amt); g = Math.max(0, g - amt); b = Math.max(0, b - amt);
+  return '#' + ((r<<16)|(g<<8)|b).toString(16).padStart(6, '0');
+}
+
+/* ============== BACKGROUND ============== */
+function drawSky() {
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#1a1f4d');
+  grad.addColorStop(0.35, '#4a2a6a');
+  grad.addColorStop(0.6, '#c84b6f');
+  grad.addColorStop(0.85, '#ff8a3d');
+  grad.addColorStop(1, '#ffb56b');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // sun
+  const sunY = H * 0.78;
+  const sunX = W * 0.18;
+  const sg = ctx.createRadialGradient(sunX, sunY, 10, sunX, sunY, 220);
+  sg.addColorStop(0, 'rgba(255, 240, 170, 1)');
+  sg.addColorStop(0.15, 'rgba(255, 180, 80, 0.95)');
+  sg.addColorStop(0.4, 'rgba(255, 130, 60, 0.5)');
+  sg.addColorStop(1, 'rgba(255, 130, 60, 0)');
+  ctx.fillStyle = sg;
+  ctx.fillRect(0, 0, W, H);
+
+  // stars (top portion only)
+  for (let i = 0; i < 60; i++) {
+    const seed = i * 17.3;
+    const sx = (Math.sin(seed) * 0.5 + 0.5) * W;
+    const sy = (Math.cos(seed * 1.7) * 0.5 + 0.5) * H * 0.35;
+    const a = 0.4 + 0.6 * Math.sin(state.time * 0.04 + i);
+    ctx.fillStyle = `rgba(255,255,255,${a * 0.7})`;
+    ctx.fillRect(sx, sy, 1.5, 1.5);
+  }
+
+  // distant silhouette skyline
+  ctx.save();
+  ctx.fillStyle = 'rgba(20, 14, 40, 0.6)';
+  ctx.beginPath();
+  ctx.moveTo(0, H * 0.62);
+  let px = 0;
+  const seed2 = 5;
+  while (px < W) {
+    const variation = Math.sin(px * 0.012 + seed2) + Math.sin(px * 0.04);
+    const bh = 30 + variation * 18 + Math.sin(px * 0.008) * 20;
+    const bw = 25 + Math.sin(px * 0.07) * 8;
+    ctx.lineTo(px, H * 0.62 - bh);
+    ctx.lineTo(px + bw, H * 0.62 - bh);
+    px += bw;
+  }
+  ctx.lineTo(W, H * 0.62);
+  ctx.closePath();
+  ctx.fill();
+
+  // closer silhouette
+  ctx.fillStyle = 'rgba(10, 8, 24, 0.7)';
+  ctx.beginPath();
+  ctx.moveTo(0, H * 0.66);
+  px = 0;
+  while (px < W) {
+    const bh = 18 + Math.abs(Math.sin(px * 0.018)) * 30;
+    const bw = 18 + Math.cos(px * 0.05) * 6;
+    ctx.lineTo(px, H * 0.66 - bh);
+    ctx.lineTo(px + bw, H * 0.66 - bh);
+    px += bw;
+  }
+  ctx.lineTo(W, H * 0.66);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+/* ============== GROUND ============== */
+function drawGround() {
+  ctx.save();
+  ctx.translate(W/2 + camera.x * camera.zoom, H/2 + camera.y * camera.zoom);
+  ctx.scale(camera.zoom, camera.zoom);
+
+  // ocean glow around landmass
+  // big soft cyan halo behind
+  const halo = ctx.createRadialGradient(0, 0, 30, 0, 0, 500);
+  halo.addColorStop(0, 'rgba(95, 229, 255, 0.18)');
+  halo.addColorStop(0.5, 'rgba(95, 229, 255, 0.06)');
+  halo.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = halo;
+  ctx.fillRect(-500, -500, 1000, 1000);
+
+  // draw tiles
+  for (const t of state.map) {
+    const p = iso(t.x, t.y);
+    // base shadow under tile (for depth)
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    drawIsoTile(p.x, p.y + 6, TILE_W/2, TILE_H/2, 'rgba(0,0,0,0.15)');
+    // depth side (left + right) - small skirt
+    const skirt = 10;
+    ctx.beginPath();
+    ctx.moveTo(p.x - TILE_W/2, p.y);
+    ctx.lineTo(p.x, p.y + TILE_H/2);
+    ctx.lineTo(p.x, p.y + TILE_H/2 + skirt);
+    ctx.lineTo(p.x - TILE_W/2, p.y + skirt);
+    ctx.closePath();
+    ctx.fillStyle = '#3a2818';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y + TILE_H/2);
+    ctx.lineTo(p.x + TILE_W/2, p.y);
+    ctx.lineTo(p.x + TILE_W/2, p.y + skirt);
+    ctx.lineTo(p.x, p.y + TILE_H/2 + skirt);
+    ctx.closePath();
+    ctx.fillStyle = '#2a1c10';
+    ctx.fill();
+
+    // grass top
+    const greens = ['#7bc547','#86d04a','#74b840','#82c945','#78c044'];
+    const c = greens[(t.shade) % greens.length];
+    drawIsoTile(p.x, p.y, TILE_W/2, TILE_H/2, c);
+
+    // grass texture: tiny strokes
+    const seed = t.x * 9 + t.y * 17;
+    for (let i = 0; i < 3; i++) {
+      const r = Math.sin(seed + i * 3.1) * 0.5 + 0.5;
+      const r2 = Math.cos(seed + i * 5.7) * 0.5 + 0.5;
+      const sx = p.x + (r - 0.5) * TILE_W * 0.7;
+      const sy = p.y + (r2 - 0.5) * TILE_H * 0.7;
+      ctx.fillStyle = `rgba(60, 110, 30, 0.6)`;
+      ctx.fillRect(sx, sy, 2, 1);
+    }
+  }
+
+  // water tiles
+  for (const w of state.water) {
+    const p = iso(w.x, w.y);
+    const wave = Math.sin(state.time * 0.05 + w.x + w.y) * 0.5 + 0.5;
+    const blue1 = `rgba(40, 110, 180, 1)`;
+    const blue2 = `rgba(70, 160, 220, ${0.85 + wave * 0.1})`;
+    drawIsoTile(p.x, p.y, TILE_W/2, TILE_H/2, blue1);
+    // ripple
+    ctx.fillStyle = `rgba(255,255,255,${0.15 + wave * 0.2})`;
+    ctx.fillRect(p.x - 6, p.y - 1 + wave*2, 12, 1.5);
+    ctx.fillRect(p.x - 3, p.y + 4 - wave*1.5, 6, 1);
+  }
+
+  ctx.restore();
+}
+
+/* ============== ENTITIES ============== */
+function drawBuilding(b) {
+  const p = iso(b.x, b.y);
+  const justPlacedScale = b.justPlaced > 0 ? 1 - (b.justPlaced / 60) : 1;
+  const sc = 0.4 + 0.6 * justPlacedScale;
+  if (b.justPlaced > 0) b.justPlaced--;
+
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.scale(sc, sc);
+
+  // ground shadow under building
+  ctx.beginPath();
+  ctx.ellipse(0, 4, 28, 12, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fill();
+
+  // bobbing
+  const bob = Math.sin(state.time * 0.04 + b.bobPhase) * 0.5;
+  ctx.translate(0, bob);
+
+  // connected glow halo
+  if (b.connected) {
+    const pulse = 0.5 + 0.5 * Math.sin(state.time * 0.08 + b.glowPhase);
+    const halo = ctx.createRadialGradient(0, 0, 5, 0, 0, 50);
+    halo.addColorStop(0, `rgba(95, 229, 255, ${0.35 + pulse * 0.15})`);
+    halo.addColorStop(0.4, `rgba(95, 229, 255, ${0.12 + pulse * 0.08})`);
+    halo.addColorStop(1, 'rgba(95,229,255,0)');
+    ctx.fillStyle = halo;
+    ctx.fillRect(-50, -60, 100, 100);
+  }
+
+  switch (b.btype) {
+    case 'house': drawHouse(b); break;
+    case 'chai': drawChai(b); break;
+    case 'apt': drawApt(b); break;
+    case 'studio': drawStudio(b); break;
+    case 'cafe': drawCafe(b); break;
+    case 'temple': drawTemple(b); break;
+  }
+
+  // wifi indicator if connected
+  if (b.connected && !b.decorative) {
+    const pulse = 0.5 + 0.5 * Math.sin(state.time * 0.15 + b.glowPhase);
+    drawWifiBadge(18, -38, pulse);
+  }
+
+  ctx.restore();
+}
+
+function drawWifiBadge(x, y, pulse) {
+  ctx.save();
+  ctx.translate(x, y);
+  // background circle
+  ctx.beginPath();
+  ctx.arc(0, 0, 8, 0, Math.PI * 2);
+  ctx.fillStyle = '#5fe5ff';
+  ctx.shadowColor = '#5fe5ff';
+  ctx.shadowBlur = 10 + pulse * 8;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  // wifi icon
+  ctx.strokeStyle = '#0a1228';
+  ctx.lineWidth = 1.3;
+  ctx.beginPath();
+  ctx.arc(0, 2, 5, Math.PI + 0.4, -0.4);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(0, 2, 3, Math.PI + 0.6, -0.6);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(0, 2, 1, 0, Math.PI * 2);
+  ctx.fillStyle = '#0a1228';
+  ctx.fill();
+  ctx.restore();
+}
+
+/* ===== HOUSE: small Indian house with sloped tile roof ===== */
+function drawHouse(b) {
+  const wallColors = b.connected
+    ? { top: '#ffd9a8', left: '#d4a070', right: '#b88555' }
+    : { top: '#f0c89a', left: '#c89866', right: '#a87545' };
+  // walls
+  drawIsoBox(0, 0, 1.4, 1.4, 22, wallColors);
+
+  // roof - two-sided sloped roof
+  const roofColor = '#c44a2c';
+  const roofDark = '#8a2e1a';
+  const roofLight = '#e35a3c';
+
+  // Peak
+  const peakHeight = 36;
+  function p(rx, ry, z=0) {
+    return { x: (rx - ry) * TILE_W/2, y: (rx + ry) * TILE_H/2 - z };
+  }
+  const A = p(-0.7, -0.7, 22);
+  const B = p( 0.7, -0.7, 22);
+  const C = p( 0.7,  0.7, 22);
+  const D = p(-0.7,  0.7, 22);
+  const peak1 = p( 0, -0.7, peakHeight);
+  const peak2 = p( 0,  0.7, peakHeight);
+  // ridge runs from peak1 to peak2
+
+  // back slope (A-B-peak1)
+  ctx.beginPath();
+  ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y);
+  ctx.lineTo(peak1.x, peak1.y); ctx.closePath();
+  ctx.fillStyle = roofDark; ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.stroke();
+  // right slope (B-C-peak2-peak1)
+  ctx.beginPath();
+  ctx.moveTo(B.x, B.y); ctx.lineTo(C.x, C.y);
+  ctx.lineTo(peak2.x, peak2.y); ctx.lineTo(peak1.x, peak1.y); ctx.closePath();
+  ctx.fillStyle = roofColor; ctx.fill();
+  ctx.stroke();
+  // front slope (C-D-peak2)
+  ctx.beginPath();
+  ctx.moveTo(C.x, C.y); ctx.lineTo(D.x, D.y);
+  ctx.lineTo(peak2.x, peak2.y); ctx.closePath();
+  ctx.fillStyle = roofLight; ctx.fill();
+  ctx.stroke();
+  // left slope (D-A-peak1-peak2)
+  ctx.beginPath();
+  ctx.moveTo(D.x, D.y); ctx.lineTo(A.x, A.y);
+  ctx.lineTo(peak1.x, peak1.y); ctx.lineTo(peak2.x, peak2.y); ctx.closePath();
+  ctx.fillStyle = roofColor; ctx.fill();
+  ctx.stroke();
+
+  // roof tile lines on right slope (visible)
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 0.8;
+  for (let i = 1; i <= 3; i++) {
+    const t = i / 4;
+    const a = { x: B.x + (peak1.x - B.x) * t, y: B.y + (peak1.y - B.y) * t };
+    const c = { x: C.x + (peak2.x - C.x) * t, y: C.y + (peak2.y - C.y) * t };
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(c.x, c.y); ctx.stroke();
+  }
+
+  // door on front-right face
+  const door = { x: 6, y: 0, w: 6, h: 14 };
+  ctx.fillStyle = '#3a1f10';
+  ctx.fillRect(8, -10, 7, 14);
+  ctx.fillStyle = '#5a3220';
+  ctx.fillRect(9, -9, 5, 12);
+  ctx.fillStyle = '#ffd23d';
+  ctx.fillRect(13, -3, 1.2, 1.2);
+
+  // window with glow if connected
+  const winColor = b.connected ? '#ffeb8a' : '#86c4ff';
+  const winGlow = b.connected ? 'rgba(255, 220, 120, 0.6)' : 'rgba(95, 200, 255, 0.3)';
+  // left face window
+  ctx.fillStyle = '#1a1410';
+  ctx.fillRect(-15, -14, 6, 6);
+  ctx.fillStyle = winColor;
+  ctx.fillRect(-14, -13, 4.5, 4.5);
+  if (b.connected) {
+    ctx.fillStyle = winGlow;
+    ctx.fillRect(-17, -16, 9, 9);
+  }
+  // window cross
+  ctx.strokeStyle = '#1a1410'; ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(-12, -13); ctx.lineTo(-12, -8.5);
+  ctx.moveTo(-14, -10.5); ctx.lineTo(-9.5, -10.5);
+  ctx.stroke();
+
+  // chimney
+  ctx.fillStyle = '#7a4a30';
+  ctx.fillRect(-3, -peakHeight - 2, 5, 8);
+  ctx.fillStyle = '#5a3220';
+  ctx.fillRect(-3, -peakHeight - 2, 5, 2);
+
+  // tulsi plant at base
+  ctx.fillStyle = '#4a3020';
+  ctx.fillRect(-22, 6, 5, 4);
+  ctx.fillStyle = '#3a8540';
+  ctx.beginPath(); ctx.arc(-19.5, 4, 3, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#5aa550';
+  ctx.beginPath(); ctx.arc(-20, 3, 1.8, 0, Math.PI*2); ctx.fill();
+}
+
+/* ===== CHAI STALL ===== */
+function drawChai(b) {
+  // small base structure
+  const wallColors = { top: '#8a5a30', left: '#5a3a20', right: '#704528' };
+  drawIsoBox(0, 0, 1.3, 1.0, 12, wallColors);
+
+  function p(rx, ry, z=0) {
+    return { x: (rx - ry) * TILE_W/2, y: (rx + ry) * TILE_H/2 - z };
+  }
+  // sloped tin roof (one-sided)
+  const A = p(-0.7, -0.5, 12);
+  const B = p( 0.7, -0.5, 12);
+  const C = p( 0.7,  0.5, 12);
+  const D = p(-0.7,  0.5, 12);
+  const A2 = p(-0.85, -0.65, 28);
+  const B2 = p( 0.85, -0.65, 28);
+  const C2 = p( 0.95,  0.55, 22);
+  const D2 = p(-0.95,  0.55, 22);
+  // roof slabs
+  ctx.beginPath();
+  ctx.moveTo(A2.x, A2.y); ctx.lineTo(B2.x, B2.y);
+  ctx.lineTo(C2.x, C2.y); ctx.lineTo(D2.x, D2.y); ctx.closePath();
+  ctx.fillStyle = '#ff8a3d'; ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.stroke();
+  // roof underside stripe
+  ctx.beginPath();
+  ctx.moveTo(D2.x, D2.y); ctx.lineTo(C2.x, C2.y);
+  ctx.lineTo(C.x, C.y); ctx.lineTo(D.x, D.y); ctx.closePath();
+  ctx.fillStyle = '#c44a2c'; ctx.fill();
+  ctx.stroke();
+
+  // tin roof stripes
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.lineWidth = 0.7;
+  for (let i = 1; i < 6; i++) {
+    const t = i / 6;
+    const a = { x: A2.x + (B2.x - A2.x) * t, y: A2.y + (B2.y - A2.y) * t };
+    const c = { x: D2.x + (C2.x - D2.x) * t, y: D2.y + (C2.y - D2.y) * t };
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(c.x, c.y); ctx.stroke();
+  }
+
+  // counter front
+  ctx.fillStyle = '#3a2410';
+  ctx.fillRect(-12, -2, 24, 6);
+  // counter top (lighter)
+  ctx.fillStyle = '#5a3a20';
+  ctx.fillRect(-12, -3, 24, 2);
+  // mug + steam
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(-3, -8, 5, 5);
+  ctx.fillStyle = '#8a5a30';
+  ctx.fillRect(-2, -7, 3, 2);
+  // steam
+  const sp = state.time * 0.06;
+  ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  for (let i = 0; i < 3; i++) {
+    const y = -10 - i * 4;
+    const x = Math.sin(sp + i) * 2;
+    if (i === 0) ctx.moveTo(0, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // hanging bulb (warm at night)
+  const bulbY = -14;
+  ctx.strokeStyle = '#3a2410'; ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(8, -22); ctx.lineTo(8, bulbY); ctx.stroke();
+  ctx.fillStyle = '#ffd23d';
+  ctx.shadowColor = '#ffb800'; ctx.shadowBlur = 8;
+  ctx.beginPath(); ctx.arc(8, bulbY + 1, 2.2, 0, Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // banner sign
+  if (b.connected) {
+    ctx.fillStyle = '#ffd23d';
+    ctx.fillRect(-10, -22, 12, 5);
+    ctx.fillStyle = '#0a1228';
+    ctx.font = 'bold 7px "Baloo 2", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('CHAI', -4, -18.5);
+  }
+}
+
+/* ===== APARTMENT ===== */
+function drawApt(b) {
+  const wallColors = { top: '#e8c994', left: '#a68552', right: '#c4a368' };
+  drawIsoBox(0, 0, 1.3, 1.3, 56, wallColors);
+
+  // top trim band
+  function p(rx, ry, z=0) {
+    return { x: (rx - ry) * TILE_W/2, y: (rx + ry) * TILE_H/2 - z };
+  }
+  // roof rim
+  const tA = p(-0.65, -0.65, 56);
+  const tB = p( 0.65, -0.65, 56);
+  const tC = p( 0.65,  0.65, 56);
+  const tD = p(-0.65,  0.65, 56);
+  ctx.beginPath();
+  ctx.moveTo(tA.x, tA.y); ctx.lineTo(tB.x, tB.y);
+  ctx.lineTo(tC.x, tC.y); ctx.lineTo(tD.x, tD.y); ctx.closePath();
+  ctx.fillStyle = '#3a4a6a';
+  ctx.fill();
+
+  // water tank on roof
+  ctx.fillStyle = '#3a3030';
+  ctx.fillRect(-2, -64, 6, 4);
+  ctx.fillStyle = '#5a4040';
+  ctx.beginPath(); ctx.ellipse(1, -64, 3, 1.2, 0, 0, Math.PI*2); ctx.fill();
+
+  // antenna
+  ctx.strokeStyle = '#1a1410'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(-6, -56); ctx.lineTo(-6, -68); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-9, -65); ctx.lineTo(-3, -65); ctx.stroke();
+
+  // grid of windows on visible faces
+  const winLit = b.connected ? '#ffd97a' : '#86c4ff';
+  const winDim = b.connected ? '#c4944a' : '#3a5070';
+  // right face windows (3 cols x 3 rows)
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 3; col++) {
+      const litRand = ((b.x*7 + b.y*11 + row*3 + col*5) % 5) > 1;
+      const c = litRand ? winLit : winDim;
+      const wx = 5 + col * 6;
+      const wy = -52 + row * 14;
+      ctx.fillStyle = '#1a1410';
+      ctx.fillRect(wx, wy, 4.5, 5);
+      ctx.fillStyle = c;
+      ctx.fillRect(wx + 0.5, wy + 0.5, 3.5, 4);
+      if (b.connected && litRand) {
+        ctx.fillStyle = 'rgba(255, 220, 120, 0.35)';
+        ctx.fillRect(wx - 1, wy - 1, 6.5, 7);
+      }
+    }
+  }
+  // left face windows
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 3; col++) {
+      const litRand = ((b.x*13 + b.y*7 + row*5 + col*3) % 5) > 1;
+      const c = litRand ? winLit : winDim;
+      const wx = -23 + col * 6;
+      const wy = -49 + row * 14 - col*2;
+      ctx.fillStyle = '#1a1410';
+      ctx.fillRect(wx, wy, 4.5, 5);
+      ctx.fillStyle = c;
+      ctx.fillRect(wx + 0.5, wy + 0.5, 3.5, 4);
+    }
+  }
+
+  // door
+  ctx.fillStyle = '#3a1f10';
+  ctx.fillRect(12, -8, 6, 12);
+  ctx.fillStyle = '#5fe5ff';
+  ctx.fillRect(13, -7, 4, 4);
+}
+
+/* ===== CREATOR STUDIO ===== */
+function drawStudio(b) {
+  const wallColors = b.connected
+    ? { top: '#b585ff', left: '#7a4ec4', right: '#9560e0' }
+    : { top: '#7a5aa0', left: '#4a3070', right: '#5a4080' };
+  drawIsoBox(0, 0, 1.4, 1.4, 26, wallColors);
+
+  // big window with creator visible
+  ctx.fillStyle = '#0a1228';
+  ctx.fillRect(-16, -20, 14, 12);
+  ctx.fillStyle = b.connected ? '#5fe5ff' : '#2a3050';
+  ctx.fillRect(-15, -19, 12, 10);
+  // ring light
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.3;
+  ctx.beginPath(); ctx.arc(-13, -16, 2.5, 0, Math.PI*2); ctx.stroke();
+  if (b.connected) {
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.beginPath(); ctx.arc(-13, -16, 1.4, 0, Math.PI*2); ctx.fill();
+  }
+  // creator silhouette
+  ctx.fillStyle = '#0a1228';
+  ctx.beginPath(); ctx.arc(-8, -14, 2, 0, Math.PI*2); ctx.fill();
+  ctx.fillRect(-10, -13, 5, 5);
+
+  // "LIVE" sign with red dot
+  if (b.connected) {
+    ctx.fillStyle = '#ff3a3a';
+    ctx.beginPath(); ctx.arc(8, -22, 1.8, 0, Math.PI*2); ctx.fill();
+    ctx.shadowColor = '#ff3a3a'; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(8, -22, 1.8, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 7px "Baloo 2", sans-serif';
+    ctx.fillText('LIVE', 11, -20.5);
+  }
+
+  // roof - flat with neon strip
+  function p(rx, ry, z=0) { return { x: (rx-ry)*TILE_W/2, y: (rx+ry)*TILE_H/2 - z }; }
+  const tA = p(-0.7, -0.7, 26);
+  const tB = p( 0.7, -0.7, 26);
+  const tC = p( 0.7,  0.7, 26);
+  const tD = p(-0.7,  0.7, 26);
+  if (b.connected) {
+    ctx.fillStyle = '#5fe5ff';
+    ctx.shadowColor = '#5fe5ff';
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.moveTo(tA.x, tA.y); ctx.lineTo(tB.x, tB.y);
+    ctx.lineTo(tB.x, tB.y + 2); ctx.lineTo(tA.x, tA.y + 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+}
+
+/* ===== GAMING CAFE ===== */
+function drawCafe(b) {
+  const wallColors = b.connected
+    ? { top: '#2a4079', left: '#15264a', right: '#1f3260' }
+    : { top: '#1a2c55', left: '#0a1228', right: '#11203f' };
+  drawIsoBox(0, 0, 1.5, 1.4, 28, wallColors);
+
+  // neon signs - 4 panels on storefront
+  const panels = [
+    {x: -16, y: -23, w: 7, h: 5, c: b.connected ? '#ff3a8a' : '#5a2050'},
+    {x: -7,  y: -23, w: 7, h: 5, c: b.connected ? '#5fe5ff' : '#1a4060'},
+    {x: -16, y: -16, w: 7, h: 5, c: b.connected ? '#5fe5ff' : '#1a4060'},
+    {x: -7,  y: -16, w: 7, h: 5, c: b.connected ? '#ffd23d' : '#5a4010'},
+  ];
+  panels.forEach(p => {
+    ctx.fillStyle = '#0a1228';
+    ctx.fillRect(p.x - 0.5, p.y - 0.5, p.w + 1, p.h + 1);
+    ctx.fillStyle = p.c;
+    if (b.connected) { ctx.shadowColor = p.c; ctx.shadowBlur = 6; }
+    ctx.fillRect(p.x, p.y, p.w, p.h);
+    ctx.shadowBlur = 0;
+  });
+
+  // "GAME" text
+  if (b.connected) {
+    ctx.fillStyle = '#ffd23d';
+    ctx.font = 'bold 8px "Baloo 2", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('GAME ZONE', 4, -28);
+    ctx.textAlign = 'left';
+  }
+}
+
+/* ===== TEMPLE (decorative) ===== */
+function drawTemple(b) {
+  // base platform (height 6)
+  drawIsoBox(0, 0, 1.6, 1.6, 6, { top:'#d4b888', left:'#8a6a40', right:'#a68552' });
+  // body (sits on top of base — anchor lifted by 6)
+  drawIsoBox(0, -6, 1.1, 1.1, 22, { top:'#f0b070', left:'#a67040', right:'#c48a50' });
+
+  // ornamental cornices on body
+  ctx.strokeStyle = '#8a5230'; ctx.lineWidth = 0.8;
+  ctx.fillStyle = '#d49060';
+  // vertical pilasters
+  for (let s = -1; s <= 1; s += 2) {
+    ctx.fillRect(s * 14, -22, 3, 16);
+  }
+
+  // dome on top of body (body top is at y = -6 - 22 = -28)
+  const domeY = -28;
+  ctx.fillStyle = '#c44a2c';
+  ctx.beginPath();
+  ctx.ellipse(0, domeY, 16, 5, 0, 0, 2*Math.PI);
+  ctx.fill();
+  ctx.fillStyle = '#ff8a3d';
+  ctx.beginPath();
+  ctx.ellipse(0, domeY - 2, 14, 10, 0, Math.PI, 2*Math.PI);
+  ctx.fill();
+  // highlight on dome
+  ctx.fillStyle = 'rgba(255, 230, 170, 0.4)';
+  ctx.beginPath();
+  ctx.ellipse(-4, domeY - 5, 6, 4, 0, Math.PI, 2*Math.PI);
+  ctx.fill();
+
+  // spire base
+  ctx.fillStyle = '#d99410';
+  ctx.fillRect(-3, domeY - 14, 6, 4);
+  // spire
+  ctx.fillStyle = '#ffd23d';
+  ctx.beginPath();
+  ctx.moveTo(-2.5, domeY - 14); ctx.lineTo(2.5, domeY - 14); ctx.lineTo(0, domeY - 26); ctx.closePath();
+  ctx.fill();
+  // top sphere with glow
+  ctx.fillStyle = '#ffe27a';
+  ctx.shadowColor = '#ffd23d'; ctx.shadowBlur = 8;
+  ctx.beginPath(); ctx.arc(0, domeY - 27, 2.2, 0, Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // arched door
+  ctx.fillStyle = '#1a1410';
+  ctx.beginPath();
+  ctx.moveTo(-4, -4); ctx.lineTo(4, -4);
+  ctx.lineTo(4, -14); ctx.quadraticCurveTo(0, -20, -4, -14);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#ffd23d'; ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // small flame/diya at entrance
+  ctx.fillStyle = '#ffd23d';
+  ctx.shadowColor = '#ff8a3d'; ctx.shadowBlur = 6;
+  const flick = 1 + Math.sin(state.time * 0.3) * 0.2;
+  ctx.beginPath();
+  ctx.ellipse(0, -2, 1.2, 2 * flick, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
+/* ===== DABBA ROUTER ===== */
+function drawRouter(r) {
+  const p = iso(r.x, r.y);
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  const sc = r.justPlaced > 0 ? 0.4 + 0.6 * (1 - r.justPlaced / 60) : 1;
+  if (r.justPlaced > 0) r.justPlaced--;
+  ctx.scale(sc, sc);
+
+  // huge pulsing range disc on ground
+  const pulse = (state.time * 0.5 + r.x * 10 + r.y * 13) % 60;
+  const rangePx = r.range * TILE_W / 2;
+  ctx.save();
+  ctx.scale(1, 0.5);
+  // base ring
+  ctx.beginPath();
+  ctx.arc(0, 0, rangePx, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(95, 229, 255, 0.45)';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+  // fill
+  ctx.beginPath();
+  ctx.arc(0, 0, rangePx, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(95, 229, 255, 0.05)';
+  ctx.fill();
+  // pulse ring
+  const pr = (pulse / 60) * rangePx;
+  ctx.beginPath();
+  ctx.arc(0, 0, pr, 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(95, 229, 255, ${0.7 * (1 - pulse / 60)})`;
+  ctx.lineWidth = 2.2;
+  ctx.stroke();
+  ctx.restore();
+
+  // chunky drop shadow
+  ctx.beginPath();
+  ctx.ellipse(0, 5, 22, 8, 0, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fill();
+
+  // small concrete pedestal (slightly raised base)
+  drawIsoBox(0, 0, 1.05, 0.85, 4, {
+    top: '#6a6a72', left: '#3a3a42', right: '#4a4a52'
+  });
+
+  // chunky black router box on the pedestal
+  drawIsoBox(0, -4, 0.78, 0.55, 13, {
+    top: '#2c2c2e', left: '#0e0e10', right: '#1a1a1c'
+  });
+
+  // glossy top sheen
+  function pp(rx, ry, z=0) { return { x:(rx-ry)*TILE_W/2, y:(rx+ry)*TILE_H/2 - z - 4 }; }
+  const tA = pp(-0.39, -0.275, 13);
+  const tB = pp( 0.39, -0.275, 13);
+  const tC = pp( 0.39,  0.275, 13);
+  const tD = pp(-0.39,  0.275, 13);
+  const sheen = ctx.createLinearGradient(tA.x, tA.y, tC.x, tC.y);
+  sheen.addColorStop(0, 'rgba(255,255,255,0.3)');
+  sheen.addColorStop(0.5, 'rgba(255,255,255,0.05)');
+  sheen.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = sheen;
+  ctx.beginPath();
+  ctx.moveTo(tA.x, tA.y); ctx.lineTo(tB.x, tB.y);
+  ctx.lineTo(tC.x, tC.y); ctx.lineTo(tD.x, tD.y); ctx.closePath();
+  ctx.fill();
+
+  // logo plate on front-right face (the lit-side face)
+  // The "right" face in our iso is the +x face, drawn on the right side visually
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(2, -14, 11, 6);
+  // DABBA wifi mark
+  ctx.fillStyle = '#ffd23d';
+  ctx.font = 'bold 5px "Baloo 2", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('DABBA', 7.5, -10);
+  ctx.textAlign = 'left';
+
+  // LEDs on the front face (bottom strip)
+  const ledY = -6;
+  const ledBlink = Math.sin(state.time * 0.3) > 0;
+  ctx.shadowBlur = 5;
+  ctx.fillStyle = '#5fe5ff'; ctx.shadowColor = '#5fe5ff';
+  ctx.beginPath(); ctx.arc(-4, ledY, 1, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(-1, ledY, 1, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = ledBlink ? '#ffd23d' : '#5a3a05';
+  ctx.shadowColor = '#ffd23d';
+  ctx.beginPath(); ctx.arc(2, ledY, 1, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#3aff5a'; ctx.shadowColor = '#3aff5a';
+  ctx.beginPath(); ctx.arc(5, ledY, 1, 0, Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // antennas (2) — emerge from box top
+  // box top is at y = cy - height = -4 - 13 = -17 (back), but front-top is closer to -10
+  ctx.strokeStyle = '#0a0a0a'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(-8, -16); ctx.lineTo(-13, -34); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo( 7, -16); ctx.lineTo( 12, -34); ctx.stroke();
+  // antenna tips with cyan glow
+  ctx.fillStyle = '#5fe5ff';
+  ctx.shadowColor = '#5fe5ff'; ctx.shadowBlur = 8;
+  ctx.beginPath(); ctx.arc(-13, -34, 1.8, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc( 12, -34, 1.8, 0, Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // wifi waves emanating from between antennas
+  const wp = (state.time * 0.15) % (Math.PI * 2);
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < 3; i++) {
+    const phase = (wp + i * 0.8) % 2.4;
+    const a = Math.max(0, 1 - phase / 2.4);
+    if (a < 0.05) continue;
+    ctx.strokeStyle = `rgba(95, 229, 255, ${a * 0.85})`;
+    ctx.beginPath();
+    ctx.arc(0, -22, 4 + phase * 4, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/* ===== DECOR (TREES, ROCKS, BUSHES) ===== */
+function drawDecor(d) {
+  const p = iso(d.x, d.y);
+  ctx.save();
+  ctx.translate(p.x, p.y);
+
+  if (d.type === 'tree') {
+    // shadow
+    ctx.beginPath(); ctx.ellipse(0, 4, 8, 3, 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fill();
+
+    if (d.variant === 0) {
+      // palm tree
+      ctx.fillStyle = '#5a3a20';
+      ctx.fillRect(-1, -16, 2, 18);
+      // fronds
+      ctx.fillStyle = '#3a8540';
+      const sw = Math.sin(state.time * 0.03) * 1;
+      const fronds = [
+        {x: -10 + sw, y: -22},
+        {x:  10 - sw, y: -22},
+        {x: -8, y: -18 + sw},
+        {x:  8, y: -18 - sw},
+        {x:  0, y: -28},
+      ];
+      fronds.forEach(f => {
+        ctx.beginPath();
+        ctx.ellipse(f.x, f.y, 7, 3, Math.atan2(f.y + 16, f.x), 0, Math.PI*2);
+        ctx.fill();
+      });
+      ctx.fillStyle = '#5aa550';
+      fronds.forEach(f => {
+        ctx.beginPath();
+        ctx.ellipse(f.x - 1, f.y - 1, 4, 1.5, Math.atan2(f.y + 16, f.x), 0, Math.PI*2);
+        ctx.fill();
+      });
+    } else if (d.variant === 1) {
+      // round shrub tree
+      ctx.fillStyle = '#5a3a20';
+      ctx.fillRect(-1.5, -10, 3, 12);
+      ctx.fillStyle = '#3a7a35';
+      ctx.beginPath(); ctx.arc(0, -14, 8, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#4a9540';
+      ctx.beginPath(); ctx.arc(-2, -16, 5, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#5aa550';
+      ctx.beginPath(); ctx.arc(-3, -17, 2.5, 0, Math.PI*2); ctx.fill();
+    } else {
+      // pine-ish tree (small conifer)
+      ctx.fillStyle = '#5a3a20';
+      ctx.fillRect(-1.2, -8, 2.4, 10);
+      ctx.fillStyle = '#2a6a30';
+      ctx.beginPath();
+      ctx.moveTo(0, -22); ctx.lineTo(-7, -10); ctx.lineTo(7, -10);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#3a8540';
+      ctx.beginPath();
+      ctx.moveTo(0, -18); ctx.lineTo(-5, -8); ctx.lineTo(5, -8);
+      ctx.closePath(); ctx.fill();
+    }
+  } else if (d.type === 'rock') {
+    ctx.beginPath(); ctx.ellipse(0, 2, 6, 2, 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fill();
+    ctx.fillStyle = '#6a6a70';
+    ctx.beginPath(); ctx.ellipse(0, -2, 6, 4, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#8a8a90';
+    ctx.beginPath(); ctx.ellipse(-1, -3, 4, 2.5, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#aaaab0';
+    ctx.beginPath(); ctx.ellipse(-2, -4, 2, 1, 0, 0, Math.PI*2); ctx.fill();
+  } else if (d.type === 'bush') {
+    ctx.beginPath(); ctx.ellipse(0, 2, 6, 2, 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fill();
+    ctx.fillStyle = '#3a7a35';
+    ctx.beginPath(); ctx.arc(-2, -2, 4, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc( 2, -1, 3.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc( 0, -4, 3, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#4a9540';
+    ctx.beginPath(); ctx.arc(-1, -3, 2, 0, Math.PI*2); ctx.fill();
+    // flowers
+    ctx.fillStyle = '#ffd23d';
+    ctx.beginPath(); ctx.arc(2, -3, 1, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ff6b6b';
+    ctx.beginPath(); ctx.arc(-2, -1, 0.9, 0, Math.PI*2); ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+/* ===== CONNECTION BEAMS ===== */
+function drawBeams() {
+  // building-type roof heights for accurate beam endpoints
+  const roofH = { house: 22, chai: 18, apt: 36, studio: 26, cafe: 22, temple: 30 };
+  state.routers.forEach(r => {
+    const rp = iso(r.x, r.y);
+    state.buildings.forEach(b => {
+      if (b.decorative) return;
+      const d = Math.hypot(r.x - b.x, r.y - b.y);
+      if (d > r.range) return;
+      const bp = iso(b.x, b.y);
+      const x1 = rp.x, y1 = rp.y - 30; // top of router antenna area
+      const x2 = bp.x, y2 = bp.y - (roofH[b.type] || 20);
+      const t = (state.time * 0.04 + r.x * 0.3 + b.x * 0.4) % 1;
+
+      // outer glow line (wider, soft)
+      ctx.strokeStyle = `rgba(95, 229, 255, ${0.18 + 0.1 * Math.sin(state.time * 0.1 + r.x + b.y)})`;
+      ctx.lineWidth = 4.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      // main beam line (dashed, animated)
+      ctx.strokeStyle = `rgba(174, 243, 255, ${0.7 + 0.2 * Math.sin(state.time * 0.1 + r.x + b.y)})`;
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([5, 4]);
+      ctx.lineDashOffset = -state.time * 0.6;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.lineCap = 'butt';
+
+      // moving pulse along beam
+      const px = x1 + (x2 - x1) * t;
+      const py = y1 + (y2 - y1) * t;
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = '#5fe5ff'; ctx.shadowBlur = 10;
+      ctx.beginPath(); ctx.arc(px, py, 2.8, 0, Math.PI*2); ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+  });
+}
+
+/* ===== PARTICLES ===== */
+function updateParticles() {
+  for (let i = state.particles.length - 1; i >= 0; i--) {
+    const p = state.particles[i];
+    p.life--;
+    if (p.kind === 'spark') {
+      p.x += p.vx; p.y += p.vy; p.z += p.vz;
+      p.vz -= 0.08;
+    } else if (p.kind === 'coin') {
+      p.x += p.vx; p.y += p.vy; p.z += p.vz;
+      p.vz -= 0.15;
+      if (p.z < 0) p.z = 0;
+    }
+    if (p.life <= 0) state.particles.splice(i, 1);
+  }
+}
+function drawParticles() {
+  state.particles.forEach(p => {
+    const sp = iso(p.x, p.y);
+    const x = sp.x, y = sp.y - p.z;
+    if (p.kind === 'spark') {
+      const a = p.life / p.max;
+      ctx.fillStyle = `rgba(95, 229, 255, ${a})`;
+      ctx.shadowColor = '#5fe5ff'; ctx.shadowBlur = 6;
+      ctx.beginPath(); ctx.arc(x, y, 1.6, 0, Math.PI*2); ctx.fill();
+      ctx.shadowBlur = 0;
+    } else if (p.kind === 'coin') {
+      const a = p.life / p.max;
+      ctx.fillStyle = `rgba(255, 210, 61, ${a})`;
+      ctx.shadowColor = '#ffd23d'; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = `rgba(255, 240, 170, ${a})`;
+      ctx.beginPath(); ctx.arc(x - 0.6, y - 0.6, 1, 0, Math.PI*2); ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  });
+}
+
+/* ===== HOVER PREVIEW ===== */
+function drawPlacementPreview() {
+  if (!state.selectedTool) return;
+  const tool = TOOLS.find(t => t.id === state.selectedTool);
+  if (!tool) return;
+  const g = screenToGrid(hoverPos.x, hoverPos.y);
+  const gx = Math.round(g.gx);
+  const gy = Math.round(g.gy);
+  const onLand = state.map.some(t => t.x === gx && t.y === gy);
+  const onWater = state.water.some(w => w.x === gx && w.y === gy);
+  const occupied = state.buildings.some(b => b.x === gx && b.y === gy) ||
+                   state.routers.some(r => r.x === gx && r.y === gy);
+  const valid = onLand && !onWater && !occupied && state.coins >= tool.cost;
+
+  const p = iso(gx, gy);
+  ctx.save();
+  ctx.translate(W/2 + camera.x * camera.zoom, H/2 + camera.y * camera.zoom);
+  ctx.scale(camera.zoom, camera.zoom);
+  ctx.translate(p.x, p.y);
+
+  // tile highlight
+  const pulse = 0.4 + 0.4 * Math.sin(state.time * 0.2);
+  ctx.beginPath();
+  ctx.moveTo(0, -TILE_H/2);
+  ctx.lineTo(TILE_W/2, 0);
+  ctx.lineTo(0, TILE_H/2);
+  ctx.lineTo(-TILE_W/2, 0);
+  ctx.closePath();
+  ctx.fillStyle = valid ? `rgba(95, 229, 255, ${0.3 + pulse * 0.2})` : `rgba(255, 80, 80, ${0.3 + pulse * 0.2})`;
+  ctx.fill();
+  ctx.strokeStyle = valid ? '#5fe5ff' : '#ff5050';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // for routers, show range circle preview
+  if (tool.kind === 'router' && valid) {
+    ctx.save();
+    ctx.scale(1, 0.5);
+    ctx.beginPath();
+    ctx.arc(0, 0, tool.range * TILE_W/2, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(95, 229, 255, 0.08)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(95, 229, 255, 0.5)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 6]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+/* ============== MAIN RENDER ============== */
+function render() {
+  // smooth zoom
+  camera.zoom += (camera.targetZoom - camera.zoom) * 0.15;
+
+  drawSky();
+  drawGround();
+
+  // sort entities (buildings + routers + decor) by isometric depth (x + y) then by type
+  const ents = [];
+  state.decor.forEach(d => ents.push({ type:'decor', d, key: d.x + d.y, sort: d.x + d.y - 0.2 }));
+  state.buildings.forEach(b => ents.push({ type:'building', b, key: b.x + b.y, sort: b.x + b.y }));
+  state.routers.forEach(r => ents.push({ type:'router', r, key: r.x + r.y, sort: r.x + r.y + 0.1 }));
+  ents.sort((a, b) => a.sort - b.sort);
+
+  ctx.save();
+  ctx.translate(W/2 + camera.x * camera.zoom, H/2 + camera.y * camera.zoom);
+  ctx.scale(camera.zoom, camera.zoom);
+
+  // Draw beams BEFORE buildings so they appear at the right depth
+  drawBeams();
+
+  ents.forEach(e => {
+    if (e.type === 'building') drawBuilding(e.b);
+    else if (e.type === 'router') drawRouter(e.r);
+    else if (e.type === 'decor') drawDecor(e.d);
+  });
+
+  drawParticles();
+  ctx.restore();
+
+  drawPlacementPreview();
+
+  // vignette
+  const vg = ctx.createRadialGradient(W/2, H/2, Math.max(W, H) * 0.3, W/2, H/2, Math.max(W, H) * 0.75);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,0.45)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/* ============== UPDATE LOOP ============== */
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(50, now - last); last = now;
+  state.time += dt / 16.6;
+
+  // income tick
+  state.buildings.forEach(b => {
+    if (b.connected && !b.decorative) {
+      b.incomeAccum += (dt / 1000) * b.incomeRate;
+      if (b.incomeAccum >= 1) {
+        const earned = Math.floor(b.incomeAccum);
+        b.incomeAccum -= earned;
+        state.coins += earned;
+        // occasional coin particle
+        if (Math.random() < 0.4) {
+          state.particles.push({
+            x: b.x, y: b.y, z: 25,
+            vx: 0, vy: 0, vz: 1.2,
+            life: 50, max: 50,
+            kind: 'coin'
+          });
+        }
+        updateHUD();
+      }
+    }
+  });
+
+  updateParticles();
+  render();
+  requestAnimationFrame(loop);
+}
+
+/* ============== INIT ============== */
+setupWorld();
+renderToolbar();
+updateHUD();
+recomputeConnectivity();
+requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>
